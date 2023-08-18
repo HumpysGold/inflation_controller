@@ -16,18 +16,32 @@ import "../lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol"
  * be immediately releasable.
  */
 contract InflationController is Ownable {
+    //////////////////////////////////////////
+    //////////      Constants    /////////////
+    //////////////////////////////////////////
     uint256 public constant SWEEP_TIMELOCK_DURATION = 14 days;
     address public constant PROTECTED_TOKEN =
         address(0xbeFD5C25A59ef2C1316c5A4944931171F30Cd3E4);
 
+    //////////////////////////////////////////
+    ///////////      Storage     /////////////
+    //////////////////////////////////////////
+    struct TimeLock {
+        address token;
+        address receiver;
+        uint256 timelockEnd;
+    }
+    TimeLock public timelock;
     uint256 private _released;
     mapping(address => uint256) private _erc20Released;
     uint64 private immutable _start;
     uint64 private immutable _duration;
 
     address private _beneficiary;
-    uint256 public timelockEnd;
 
+    //////////////////////////////////////////
+    ///////////      Events     //////////////
+    //////////////////////////////////////////
     event BeneficiaryChanged(
         address indexed previousBeneficiary,
         address indexed newBeneficiary
@@ -186,18 +200,34 @@ contract InflationController is Ownable {
             token == PROTECTED_TOKEN,
             "InflationController: not protected token"
         );
-        if (timelockEnd == 0) {
-            timelockEnd = block.timestamp + SWEEP_TIMELOCK_DURATION;
-            emit TimelockSet(timelockEnd);
-        } else if (block.timestamp >= timelockEnd) {
+        if (timelock.timelockEnd == 0) {
+            timelock = TimeLock(
+                token,
+                receiver,
+                block.timestamp + SWEEP_TIMELOCK_DURATION
+            );
+            emit TimelockSet(timelock.timelockEnd);
+        } else if (block.timestamp >= timelock.timelockEnd) {
+            require(
+                timelock.token == token && timelock.receiver == receiver,
+                "InflationController: timelock token OR receiver mismatch"
+            );
             uint256 amount = IERC20(token).balanceOf(address(this));
             SafeERC20.safeTransfer(IERC20(token), receiver, amount);
-            timelockEnd = 0;
-            emit TimelockSet(timelockEnd);
+            timelock.timelockEnd = 0;
+            emit TimelockSet(timelock.timelockEnd);
             emit ERC20Swept(token, receiver, amount);
         } else {
             revert("InflationController: timelock not over");
         }
+    }
+
+    /// @notice Owner can reset timelock
+    function resetTimelock() external onlyOwner {
+        timelock.timelockEnd = 0;
+        timelock.token = address(0);
+        timelock.receiver = address(0);
+        emit TimelockSet(timelock.timelockEnd);
     }
 
     /// @notice sweep unwanted tokens from the contract, no timelock for non-protected tokens
