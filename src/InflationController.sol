@@ -27,7 +27,6 @@ contract InflationController is Ownable {
     ///////////      Storage     /////////////
     //////////////////////////////////////////
     struct TimeLock {
-        address token;
         address receiver;
         uint256 timelockEnd;
     }
@@ -202,15 +201,14 @@ contract InflationController is Ownable {
         );
         if (timelock.timelockEnd == 0) {
             timelock = TimeLock(
-                token,
                 receiver,
                 block.timestamp + SWEEP_TIMELOCK_DURATION
             );
             emit TimelockSet(timelock.timelockEnd);
         } else if (block.timestamp >= timelock.timelockEnd) {
             require(
-                timelock.token == token && timelock.receiver == receiver,
-                "InflationController: timelock token OR receiver mismatch"
+                timelock.receiver == receiver,
+                "InflationController: timelock receiver mismatch"
             );
             uint256 amount = IERC20(token).balanceOf(address(this));
             SafeERC20.safeTransfer(IERC20(token), receiver, amount);
@@ -225,8 +223,6 @@ contract InflationController is Ownable {
     /// @notice Owner can reset timelock
     function resetTimelock() external onlyOwner {
         timelock.timelockEnd = 0;
-        timelock.token = address(0);
-        timelock.receiver = address(0);
         emit TimelockSet(timelock.timelockEnd);
     }
 

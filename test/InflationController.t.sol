@@ -42,7 +42,7 @@ contract TestInflationController is Fixture {
     function testSweepTimelockHappy() public {
         uint256 arbitraryAmount = 1000e18;
         // Make sure timelock is 0 now
-        (, , uint256 timelockEnd) = inflationController.timelock();
+        (, uint256 timelockEnd) = inflationController.timelock();
         assertEq(timelockEnd, 0);
         // Make alice owner of the contract
         inflationController.transferOwnership(alice);
@@ -59,7 +59,7 @@ contract TestInflationController is Fixture {
         inflationController.sweepTimelock(address(GOLD), alice);
 
         // Make sure timelock is set to 14 days from now
-        (, , timelockEnd) = inflationController.timelock();
+        (, timelockEnd) = inflationController.timelock();
         assertEq(
             timelockEnd,
             block.timestamp + inflationController.SWEEP_TIMELOCK_DURATION()
@@ -77,7 +77,7 @@ contract TestInflationController is Fixture {
         // Make sure alice now has the ERC20 tokens
         assertEq(GOLD.balanceOf(alice), arbitraryAmount);
         // Make sure timelock is set to 0
-        (, , timelockEnd) = inflationController.timelock();
+        (, timelockEnd) = inflationController.timelock();
         assertEq(timelockEnd, 0);
     }
 
@@ -85,7 +85,7 @@ contract TestInflationController is Fixture {
     function testSweepTimelockHappyMulTimes() public {
         uint256 arbitraryAmount = 1000e18;
         // Make sure timelock is 0 now
-        (, , uint256 timelockEnd) = inflationController.timelock();
+        (, uint256 timelockEnd) = inflationController.timelock();
         assertEq(timelockEnd, 0);
         // Make alice owner of the contract
         inflationController.transferOwnership(alice);
@@ -139,7 +139,7 @@ contract TestInflationController is Fixture {
     function testSweepTimeLockReset() public {
         uint256 arbitraryAmount = 1000e18;
         // Make sure timelock is 0 now
-        (, , uint256 timelockEnd) = inflationController.timelock();
+        (, uint256 timelockEnd) = inflationController.timelock();
         assertEq(timelockEnd, 0);
         // Make alice owner of the contract
         inflationController.transferOwnership(alice);
@@ -157,7 +157,7 @@ contract TestInflationController is Fixture {
         inflationController.sweepTimelock(address(GOLD), alice);
 
         // Make sure timelock is set to 14 days from now
-        (, , timelockEnd) = inflationController.timelock();
+        (, timelockEnd) = inflationController.timelock();
         assertEq(
             timelockEnd,
             block.timestamp + inflationController.SWEEP_TIMELOCK_DURATION()
@@ -168,21 +168,16 @@ contract TestInflationController is Fixture {
         inflationController.resetTimelock();
 
         // Make sure timelock is set to 0
-        (
-            address token,
-            address receiver,
-            uint256 newTimelockEnd
-        ) = inflationController.timelock();
+        (address receiver, uint256 newTimelockEnd) = inflationController
+            .timelock();
         assertEq(newTimelockEnd, 0);
-        assertEq(token, address(0));
-        assertEq(receiver, address(0));
     }
 
     /// @dev Case when owner tries to sweep timelocked tokens before timelock is over
     function testSweepTimelockTooEarly() public {
         uint256 arbitraryAmount = 1000e18;
         // Make sure timelock is 0 now
-        (, , uint256 timelockEnd) = inflationController.timelock();
+        (, uint256 timelockEnd) = inflationController.timelock();
         assertEq(timelockEnd, 0);
         // Make alice owner of the contract
         inflationController.transferOwnership(alice);
@@ -200,7 +195,7 @@ contract TestInflationController is Fixture {
         inflationController.sweepTimelock(address(GOLD), alice);
 
         // Make sure timelock is set to 14 days from now
-        (, , timelockEnd) = inflationController.timelock();
+        (, timelockEnd) = inflationController.timelock();
         assertEq(
             timelockEnd,
             block.timestamp + inflationController.SWEEP_TIMELOCK_DURATION()
@@ -221,14 +216,14 @@ contract TestInflationController is Fixture {
         // Make sure alice has no ERC20 tokens
         assertEq(GOLD.balanceOf(alice), 0);
         // Make sure timelock is not 0
-        (, , timelockEnd) = inflationController.timelock();
+        (, timelockEnd) = inflationController.timelock();
         assertNotEq(timelockEnd, 0);
     }
 
     /// @dev Case when owner tries to sweep timelocked tokens before timelock is over
     function testSweepTimelockReceiverChanged() public {
         // Make sure timelock is 0 now
-        (, , uint256 timelockEnd) = inflationController.timelock();
+        (, uint256 timelockEnd) = inflationController.timelock();
         assertEq(timelockEnd, 0);
         // Make alice owner of the contract
         inflationController.transferOwnership(alice);
@@ -247,9 +242,7 @@ contract TestInflationController is Fixture {
         // Now alice wants to sweep the ERC20 tokens
         vm.prank(alice);
         // Change the address of the receiver which should revert
-        vm.expectRevert(
-            "InflationController: timelock token OR receiver mismatch"
-        );
+        vm.expectRevert("InflationController: timelock receiver mismatch");
         inflationController.sweepTimelock(address(GOLD), bob);
     }
 
