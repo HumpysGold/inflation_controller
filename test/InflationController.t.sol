@@ -371,4 +371,25 @@ contract TestInflationController is Fixture {
         // Check alice has the released amount
         assertEq(GOLD.balanceOf(alice), arbitraryAmount);
     }
+
+    /// @dev Only owner or beneficiary can release
+    function testVestTokensUnhappy(uint256 arbitraryAmount) public {
+        uint256 arbitraryAmount = 1000e18;
+        // Generate some ERC20 tokens to sweep
+        setStorage(
+            address(inflationController),
+            GOLD.balanceOf.selector,
+            address(GOLD),
+            arbitraryAmount
+        );
+
+        // Set alice as beneficiary
+        vm.prank(inflationController.OWNER_ADDRESS());
+        inflationController.setBeneficiary(alice);
+
+        // Make sure it reverts if trying to release from another address
+        vm.startPrank(bob);
+        vm.expectRevert("InflationController: not the beneficiary or owner");
+        inflationController.release(address(GOLD));
+    }
 }
