@@ -373,7 +373,7 @@ contract TestInflationController is Fixture {
     }
 
     /// @dev Only owner or beneficiary can release
-    function testVestTokensUnhappy(uint256 arbitraryAmount) public {
+    function testVestTokensUnhappy() public {
         uint256 arbitraryAmount = 1000e18;
         // Generate some ERC20 tokens to sweep
         setStorage(
@@ -390,6 +390,24 @@ contract TestInflationController is Fixture {
         // Make sure it reverts if trying to release from another address
         vm.startPrank(bob);
         vm.expectRevert("InflationController: not the beneficiary or owner");
+        inflationController.release(address(GOLD));
+    }
+
+    /// @dev Should revert if beneficiary is not set
+    function testVestTokensBeneficiaryNotSet() public {
+        uint256 arbitraryAmount = 1000e18;
+        // Generate some ERC20 tokens to sweep
+        setStorage(
+            address(inflationController),
+            GOLD.balanceOf.selector,
+            address(GOLD),
+            arbitraryAmount
+        );
+        // Set no beneficiary
+
+        // Make sure it reverts if trying to release from another address
+        vm.prank(inflationController.OWNER_ADDRESS());
+        vm.expectRevert("InflationController: beneficiary not set");
         inflationController.release(address(GOLD));
     }
 }

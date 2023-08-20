@@ -20,8 +20,8 @@ contract InflationController is Ownable {
     //////////      Constants    /////////////
     //////////////////////////////////////////
     uint256 public constant SWEEP_TIMELOCK_DURATION = 14 days;
-    address public constant PROTECTED_TOKEN =
-        address(0xbeFD5C25A59ef2C1316c5A4944931171F30Cd3E4);
+    IERC20 public constant PROTECTED_TOKEN =
+        IERC20(address(0xbeFD5C25A59ef2C1316c5A4944931171F30Cd3E4));
 
     // Humpy's wallet
     address public constant OWNER_ADDRESS =
@@ -48,6 +48,8 @@ contract InflationController is Ownable {
         address indexed previousBeneficiary,
         address indexed newBeneficiary
     );
+    event StartSet(uint256 start);
+    event DurationSet(uint256 duration);
     event ERC20Released(address indexed token, uint256 amount);
     event TimelockSet(uint256 timelockEnd);
     event ERC20Swept(
@@ -65,6 +67,8 @@ contract InflationController is Ownable {
 
         // Transfer ownership to the owner address
         transferOwnership(OWNER_ADDRESS);
+        emit StartSet(startTimestamp);
+        emit DurationSet(durationSeconds);
     }
 
     /**
@@ -113,6 +117,10 @@ contract InflationController is Ownable {
         require(
             msg.sender == beneficiary() || msg.sender == owner(),
             "InflationController: not the beneficiary or owner"
+        );
+        require(
+            beneficiary() != address(0),
+            "InflationController: beneficiary not set"
         );
         uint256 amount = releasable(token);
         _erc20Released[token] += amount;
@@ -166,8 +174,9 @@ contract InflationController is Ownable {
     /// @notice If Timelock is over, sweep all ERC20 tokens to the owner, otherwise create a new timelock
     /// @param receiver address to send the tokens to
     function sweepTimelock(address receiver) external onlyOwner {
+        uint256 balance = PROTECTED_TOKEN.balanceOf(address(this));
         require(
-            IERC20(PROTECTED_TOKEN).balanceOf(address(this)) > 0,
+            balance > 0,
             "InflationController: no protected token to sweep"
         );
         if (timelock.timelockEnd == 0) {
@@ -181,11 +190,10 @@ contract InflationController is Ownable {
                 timelock.receiver == receiver,
                 "InflationController: timelock receiver mismatch"
             );
-            uint256 amount = IERC20(PROTECTED_TOKEN).balanceOf(address(this));
-            SafeERC20.safeTransfer(IERC20(PROTECTED_TOKEN), receiver, amount);
+            SafeERC20.safeTransfer(PROTECTED_TOKEN, receiver, balance);
             timelock.timelockEnd = 0;
             emit TimelockSet(timelock.timelockEnd);
-            emit ERC20Swept(PROTECTED_TOKEN, receiver, amount);
+            emit ERC20Swept(address(PROTECTED_TOKEN), receiver, balance);
         } else {
             revert("InflationController: timelock not over");
         }
@@ -202,7 +210,7 @@ contract InflationController is Ownable {
     /// @param receiver address to send the tokens to
     function sweep(address token, address receiver) external onlyOwner {
         require(
-            token != PROTECTED_TOKEN,
+            token != address(PROTECTED_TOKEN),
             "InflationController: protected token"
         );
         require(receiver != address(0), "InflationController: zero address");
