@@ -64,11 +64,6 @@ contract InflationController is Ownable {
     }
 
     /**
-     * @dev The contract should be able to receive Eth.
-     */
-    receive() external payable {}
-
-    /**
      * @dev Getter for the beneficiary address.
      */
     function beneficiary() public view returns (address) {
@@ -193,11 +188,11 @@ contract InflationController is Ownable {
     }
 
     /// @notice If Timelock is over, sweep all ERC20 tokens to the owner, otherwise create a new timelock
-    /// @param token Protocol token to sweep
-    function sweepTimelock(address token, address receiver) external onlyOwner {
+    /// @param receiver address to send the tokens to
+    function sweepTimelock(address receiver) external onlyOwner {
         require(
-            token == PROTECTED_TOKEN,
-            "InflationController: not protected token"
+            IERC20(PROTECTED_TOKEN).balanceOf(address(this)) > 0,
+            "InflationController: no protected token to sweep"
         );
         if (timelock.timelockEnd == 0) {
             timelock = TimeLock(
@@ -210,11 +205,11 @@ contract InflationController is Ownable {
                 timelock.receiver == receiver,
                 "InflationController: timelock receiver mismatch"
             );
-            uint256 amount = IERC20(token).balanceOf(address(this));
-            SafeERC20.safeTransfer(IERC20(token), receiver, amount);
+            uint256 amount = IERC20(PROTECTED_TOKEN).balanceOf(address(this));
+            SafeERC20.safeTransfer(IERC20(PROTECTED_TOKEN), receiver, amount);
             timelock.timelockEnd = 0;
             emit TimelockSet(timelock.timelockEnd);
-            emit ERC20Swept(token, receiver, amount);
+            emit ERC20Swept(PROTECTED_TOKEN, receiver, amount);
         } else {
             revert("InflationController: timelock not over");
         }
@@ -238,14 +233,5 @@ contract InflationController is Ownable {
         uint256 balance = IERC20(token).balanceOf(address(this));
         SafeERC20.safeTransfer(IERC20(token), receiver, balance);
         emit ERC20Swept(token, receiver, balance);
-    }
-
-    /// @notice withdraw gas token from the contract
-    /// @param receiver address to send the gas token to
-    function sweepGasToken(address payable receiver) external onlyOwner {
-        require(receiver != address(0), "InflationController: zero address");
-        uint256 amount = address(this).balance;
-        receiver.transfer(amount);
-        emit GasTokenWithdrawn(amount, receiver);
     }
 }
