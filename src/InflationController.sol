@@ -104,7 +104,7 @@ contract InflationController is Ownable {
      * IERC20 contract.
      */
     function releasable(address token) public view returns (uint256) {
-        return vestedAmount(token, uint64(block.timestamp)) - released(token);
+        return _vestedAmount(token, uint64(block.timestamp)) - released(token);
     }
 
     /**
@@ -128,13 +128,23 @@ contract InflationController is Ownable {
         SafeERC20.safeTransfer(IERC20(token), beneficiary(), amount);
     }
 
-    /**
-     * @dev Calculates the amount of tokens that has already vested. Default implementation is a linear vesting curve.
-     */
+    /// @notice Calculates the amount of tokens that has already vested
+    /// @param token token to calculate vested amount for
+    /// @param timestamp timestamp to calculate vested amount for
     function vestedAmount(
         address token,
         uint64 timestamp
-    ) public view returns (uint256) {
+    ) external view returns (uint256) {
+        return _vestedAmount(token, timestamp);
+    }
+
+    /**
+     * @dev Calculates the amount of tokens that has already vested. Default implementation is a linear vesting curve.
+     */
+    function _vestedAmount(
+        address token,
+        uint64 timestamp
+    ) internal view returns (uint256) {
         return
             _vestingSchedule(
                 IERC20(token).balanceOf(address(this)) + released(token),

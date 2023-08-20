@@ -179,8 +179,7 @@ contract TestInflationController is Fixture {
         inflationController.resetTimelock();
 
         // Make sure timelock is set to 0
-        (address receiver, uint256 newTimelockEnd) = inflationController
-            .timelock();
+        (, uint256 newTimelockEnd) = inflationController.timelock();
         assertEq(newTimelockEnd, 0);
     }
 
@@ -370,6 +369,10 @@ contract TestInflationController is Fixture {
         assertEq(inflationController.released(address(GOLD)), arbitraryAmount);
         // Check alice has the released amount
         assertEq(GOLD.balanceOf(alice), arbitraryAmount);
+        // Check that no more releasable tokens at the moment
+        assertEq(inflationController.releasable(address(GOLD)), 0);
+        // Check balance of the contract is 0
+        assertEq(GOLD.balanceOf(address(inflationController)), 0);
     }
 
     /// @dev Only owner or beneficiary can release
