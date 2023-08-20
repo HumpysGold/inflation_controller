@@ -1,4 +1,4 @@
-# Inflation controller for #GOLD tokens
+# Inflation controller for $GOLD tokens
 
 ## What this is ?
 
