@@ -23,6 +23,8 @@ contract InflationController is Ownable {
     address public constant PROTECTED_TOKEN =
         address(0xbeFD5C25A59ef2C1316c5A4944931171F30Cd3E4);
 
+    // TODO: Here should be msig address
+    address public constant OWNER_ADDRESS = address(1337);
     //////////////////////////////////////////
     ///////////      Storage     /////////////
     //////////////////////////////////////////
@@ -45,7 +47,6 @@ contract InflationController is Ownable {
         address indexed previousBeneficiary,
         address indexed newBeneficiary
     );
-    event EtherReleased(uint256 amount);
     event ERC20Released(address indexed token, uint256 amount);
     event TimelockSet(uint256 timelockEnd);
     event ERC20Swept(
@@ -53,14 +54,16 @@ contract InflationController is Ownable {
         address indexed receiver,
         uint256 amount
     );
-    event GasTokenWithdrawn(uint256 amount, address indexed recipient);
 
     /**
      * @dev Set start timestamp and vesting duration of the inflation controller.
      */
-    constructor(uint64 startTimestamp, uint64 durationSeconds) payable {
+    constructor(uint64 startTimestamp, uint64 durationSeconds) {
         _start = startTimestamp;
         _duration = durationSeconds;
+
+        // Transfer ownership to the owner address
+        transferOwnership(OWNER_ADDRESS);
     }
 
     /**
@@ -85,24 +88,10 @@ contract InflationController is Ownable {
     }
 
     /**
-     * @dev Amount of eth already released
-     */
-    function released() public view returns (uint256) {
-        return _released;
-    }
-
-    /**
      * @dev Amount of token already released
      */
     function released(address token) public view returns (uint256) {
         return _erc20Released[token];
-    }
-
-    /**
-     * @dev Getter for the amount of releasable eth.
-     */
-    function releasable() public view returns (uint256) {
-        return vestedAmount(uint64(block.timestamp)) - released();
     }
 
     /**
@@ -111,18 +100,6 @@ contract InflationController is Ownable {
      */
     function releasable(address token) public view returns (uint256) {
         return vestedAmount(token, uint64(block.timestamp)) - released(token);
-    }
-
-    /**
-     * @dev Release the native token (ether) that have already vested.
-     *
-     * Emits a {EtherReleased} event.
-     */
-    function release() public {
-        uint256 amount = releasable();
-        _released += amount;
-        emit EtherReleased(amount);
-        Address.sendValue(payable(beneficiary()), amount);
     }
 
     /**
@@ -135,13 +112,6 @@ contract InflationController is Ownable {
         _erc20Released[token] += amount;
         emit ERC20Released(token, amount);
         SafeERC20.safeTransfer(IERC20(token), beneficiary(), amount);
-    }
-
-    /**
-     * @dev Calculates the amount of ether that has already vested. Default implementation is a linear vesting curve.
-     */
-    function vestedAmount(uint64 timestamp) public view returns (uint256) {
-        return _vestingSchedule(address(this).balance + released(), timestamp);
     }
 
     /**

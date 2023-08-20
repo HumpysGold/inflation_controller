@@ -20,9 +20,15 @@ contract TestInflationController is Fixture {
             // 3 years
             uint64(3 * 365 days)
         );
+        // Make sure inflation contract has correct owner:
+        assertEq(
+            inflationController.owner(),
+            inflationController.OWNER_ADDRESS()
+        );
     }
 
     function testSetBeneficiaryHappy() public {
+        vm.prank(inflationController.OWNER_ADDRESS());
         inflationController.setBeneficiary(alice);
         assertEq(inflationController.beneficiary(), alice);
     }
@@ -34,8 +40,10 @@ contract TestInflationController is Fixture {
         vm.stopPrank();
 
         // Try to set the beneficiary to address(0)
+        vm.startPrank(inflationController.OWNER_ADDRESS());
         vm.expectRevert("InflationController: zero address");
         inflationController.setBeneficiary(address(0));
+        vm.stopPrank();
     }
 
     /// @dev Happy case when owner wants to sweep all timelocked tokens
@@ -45,6 +53,7 @@ contract TestInflationController is Fixture {
         (, uint256 timelockEnd) = inflationController.timelock();
         assertEq(timelockEnd, 0);
         // Make alice owner of the contract
+        vm.prank(inflationController.OWNER_ADDRESS());
         inflationController.transferOwnership(alice);
 
         // Generate some ERC20 tokens to sweep
@@ -88,6 +97,7 @@ contract TestInflationController is Fixture {
         (, uint256 timelockEnd) = inflationController.timelock();
         assertEq(timelockEnd, 0);
         // Make alice owner of the contract
+        vm.prank(inflationController.OWNER_ADDRESS());
         inflationController.transferOwnership(alice);
 
         // Generate some ERC20 tokens to sweep
@@ -142,6 +152,7 @@ contract TestInflationController is Fixture {
         (, uint256 timelockEnd) = inflationController.timelock();
         assertEq(timelockEnd, 0);
         // Make alice owner of the contract
+        vm.prank(inflationController.OWNER_ADDRESS());
         inflationController.transferOwnership(alice);
 
         // Generate some ERC20 tokens to sweep
@@ -180,6 +191,7 @@ contract TestInflationController is Fixture {
         (, uint256 timelockEnd) = inflationController.timelock();
         assertEq(timelockEnd, 0);
         // Make alice owner of the contract
+        vm.prank(inflationController.OWNER_ADDRESS());
         inflationController.transferOwnership(alice);
 
         // Generate some ERC20 tokens to sweep
@@ -226,6 +238,7 @@ contract TestInflationController is Fixture {
         (, uint256 timelockEnd) = inflationController.timelock();
         assertEq(timelockEnd, 0);
         // Make alice owner of the contract
+        vm.prank(inflationController.OWNER_ADDRESS());
         inflationController.transferOwnership(alice);
         // Generate some ERC20 tokens to sweep
         setStorage(
@@ -255,6 +268,7 @@ contract TestInflationController is Fixture {
     function testSweepNormal() public {
         uint256 arbitraryAmount = 1000e18;
         // Make alice owner of the contract
+        vm.prank(inflationController.OWNER_ADDRESS());
         inflationController.transferOwnership(alice);
 
         // Generate some ERC20 tokens to sweep
@@ -272,6 +286,7 @@ contract TestInflationController is Fixture {
 
     function testSweepFails() public {
         // Make alice owner of the contract
+        vm.prank(inflationController.OWNER_ADDRESS());
         inflationController.transferOwnership(alice);
         // Tries to sweep ERC20 tokens that are timelocked and fails
         vm.startPrank(alice);
