@@ -23,8 +23,9 @@ contract InflationController is Ownable {
     address public constant PROTECTED_TOKEN =
         address(0xbeFD5C25A59ef2C1316c5A4944931171F30Cd3E4);
 
-    // TODO: Here should be msig address
-    address public constant OWNER_ADDRESS = address(1337);
+    // Humpy's wallet
+    address public constant OWNER_ADDRESS =
+        address(0x36cc7B13029B5DEe4034745FB4F24034f3F2ffc6);
     //////////////////////////////////////////
     ///////////      Storage     /////////////
     //////////////////////////////////////////
@@ -108,6 +109,11 @@ contract InflationController is Ownable {
      * Emits a {ERC20Released} event.
      */
     function release(address token) public {
+        // Can only be released by the beneficiary and owner
+        require(
+            msg.sender == beneficiary() || msg.sender == owner(),
+            "InflationController: not the beneficiary or owner"
+        );
         uint256 amount = releasable(token);
         _erc20Released[token] += amount;
         emit ERC20Released(token, amount);

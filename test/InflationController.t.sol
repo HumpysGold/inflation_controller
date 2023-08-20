@@ -294,4 +294,81 @@ contract TestInflationController is Fixture {
         inflationController.sweep(address(GOLD), alice);
         vm.stopPrank();
     }
+
+    //////////////////////////////////////////
+    ///////////   Vesting Logic  /////////////
+    //////////////////////////////////////////
+    function testVestTokensHappy(uint256 arbitraryAmount) public {
+        vm.assume(arbitraryAmount > 0);
+        // 100b should be enough
+        vm.assume(arbitraryAmount < 100_000_000_000e18);
+        // Generate some ERC20 tokens to sweep
+        setStorage(
+            address(inflationController),
+            GOLD.balanceOf.selector,
+            address(GOLD),
+            arbitraryAmount
+        );
+
+        // Check that no tokens are vested yet
+        assertEq(
+            inflationController.vestedAmount(
+                address(GOLD),
+                uint64(block.timestamp)
+            ),
+            0
+        );
+        // Check no released tokens yet
+        assertEq(inflationController.releasable(address(GOLD)), 0);
+        // Checked no tokens released:
+        assertEq(inflationController.released(address(GOLD)), 0);
+
+        // Set alice as beneficiary
+        vm.prank(inflationController.OWNER_ADDRESS());
+        inflationController.setBeneficiary(alice);
+
+        // Roll time forward 1 year
+        vm.warp(block.timestamp + 365 days);
+        // Calculate releaseble amount after 1 year
+        uint256 releasableAmount = inflationController.releasable(
+            address(GOLD)
+        );
+        // Check that releasable amount is 1/3 of total amount
+        assertEq(releasableAmount, arbitraryAmount / 3);
+        // Alice takes the releasable amount
+        vm.prank(alice);
+        inflationController.release(address(GOLD));
+        // Check that released amount is 1/3 of total amount
+        assertEq(
+            inflationController.released(address(GOLD)),
+            arbitraryAmount / 3
+        );
+        // Check alice has the released amount
+        assertEq(GOLD.balanceOf(alice), arbitraryAmount / 3);
+        // Make sure no more releasable tokens at the moment
+        assertEq(inflationController.releasable(address(GOLD)), 0);
+
+        // Roll time forward one more year
+        vm.warp(block.timestamp + 365 days);
+        // Calculate releaseble amount after 2 years and release it
+        vm.prank(alice);
+        inflationController.release(address(GOLD));
+        // Check that released amount is 2/3 of total amount
+        assertEq(
+            inflationController.released(address(GOLD)),
+            (arbitraryAmount * 2) / 3
+        );
+        // Check alice has the released amount
+        assertEq(GOLD.balanceOf(alice), (arbitraryAmount * 2) / 3);
+
+        // Roll time forward one more year
+        vm.warp(block.timestamp + 365 days);
+        // Release rest of it to alice and make sure all tokens are released
+        vm.prank(alice);
+        inflationController.release(address(GOLD));
+        // Check that released amount is 3/3 of total amount
+        assertEq(inflationController.released(address(GOLD)), arbitraryAmount);
+        // Check alice has the released amount
+        assertEq(GOLD.balanceOf(alice), arbitraryAmount);
+    }
 }
