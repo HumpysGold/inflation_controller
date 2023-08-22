@@ -34,7 +34,6 @@ contract InflationController is Ownable {
         uint256 timelockEnd;
     }
     TimeLock public timelock;
-    uint256 private _released;
     mapping(address => uint256) private _erc20Released;
     uint64 private immutable _start;
     uint64 private immutable _duration;
@@ -200,8 +199,8 @@ contract InflationController is Ownable {
                 timelock.receiver == receiver,
                 "InflationController: timelock receiver mismatch"
             );
-            SafeERC20.safeTransfer(PROTECTED_TOKEN, receiver, balance);
             timelock.timelockEnd = 0;
+            SafeERC20.safeTransfer(PROTECTED_TOKEN, receiver, balance);
             emit TimelockSet(timelock.timelockEnd);
             emit ERC20Swept(address(PROTECTED_TOKEN), receiver, balance);
         } else {
