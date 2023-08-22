@@ -375,6 +375,51 @@ contract TestInflationController is Fixture {
         assertEq(GOLD.balanceOf(address(inflationController)), 0);
     }
 
+    function testVestTokensStartsInFuture(uint256 arbitraryAmount) public {
+        vm.assume(arbitraryAmount > 100e18);
+        // 100b should be enough
+        vm.assume(arbitraryAmount < 100_000_000_000e18);
+        InflationController futureInflationController = new InflationController(
+            uint64(block.timestamp + 365 days),
+            // 3 years
+            uint64(3 * 365 days)
+        );
+        // Generate some ERC20 tokens to sweep
+        setStorage(
+            address(futureInflationController),
+            GOLD.balanceOf.selector,
+            address(GOLD),
+            arbitraryAmount
+        );
+
+        // Check that no tokens are vested yet
+        assertEq(
+            futureInflationController.vestedAmount(
+                address(GOLD),
+                uint64(block.timestamp)
+            ),
+            0
+        );
+        // Warp half a year into the future and make sure vesting hasn't started yet
+        vm.warp(block.timestamp + 180 days);
+        assertEq(
+            futureInflationController.vestedAmount(
+                address(GOLD),
+                uint64(block.timestamp)
+            ),
+            0
+        );
+        // Warp 1 year into the future and make sure vesting has started
+        vm.warp(block.timestamp + 365 days);
+        assertGt(
+            futureInflationController.vestedAmount(
+                address(GOLD),
+                uint64(block.timestamp)
+            ),
+            0
+        );
+    }
+
     /// @dev Only owner or beneficiary can release
     function testVestTokensUnhappy() public {
         uint256 arbitraryAmount = 1000e18;
