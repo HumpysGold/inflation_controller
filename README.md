@@ -12,17 +12,26 @@ Let's list them:
 
 
 ## Deployment
-Inflation Controller for $GOLD is deployed at [0x2b55CEd05e9Ff838bcf3581D998468c603648466](https://basescan.org/address/0x2b55CEd05e9Ff838bcf3581D998468c603648466)
+- Inflation Controller for $GOLD is deployed at [0x2b55CEd05e9Ff838bcf3581D998468c603648466](https://basescan.org/address/0x2b55CEd05e9Ff838bcf3581D998468c603648466)
+- Inflation Controller vesting contract for GOLD Team deployed here: [0x45ac5b411bcc919d869826da904be9fbab527d22](https://basescan.org/address/0x45ac5b411bcc919d869826da904be9fbab527d22)
 
-Initial parameters:
-- Vesting start time is set at 00:00 GMT August 31 2023(ts is **1693440000**)
-- Vesting duration is 3 years(ts is **94608000**)
+## Initial parameters:
+### Inflation Controller for $GOLD
+- Vesting start time is set at 00:00 GMT August 31 2023(ts is **1693440000**) for Inflation Controller for $GOLD
+- Vesting duration is 3 years(ts is **94608000**) for Inflation Controller for $GOLD inflation controller
+
+### Inflation Controller vesting contract for GOLD Team
+- Vesting start time is set at 00:00 GMT August 31 2023(ts is **1693440000**) for Inflation Controller vesting contract for GOLD Team
+- Vesting duration is 1 year(ts is **31536000**) for GOLD Team
 
 Contract was deployed by deployer address("0x5612de655956236284963d7d99653354a09cfd39") but ownership is transferred
 to Humpy's wallet([0x36cc7B13029B5DEe4034745FB4F24034f3F2ffc6](https://debank.com/profile/0x36cc7b13029b5dee4034745fb4f24034f3f2ffc6))
 in the constructor: [link](https://basescan.org/tx/0x8adbef9eb7d016f5df44b68eb01a6e0fb08be3afbbe8004e0ada356e7b6cbc4b#eventlog)
 
 **Beneficiary of vesting should be set by current owner of the contract**
+
+---
+
 
 ## Good to know
 Vesting will start at **00:00 GMT August 31 2023**, regardless of the amount of tokens in the contract. This means that if
